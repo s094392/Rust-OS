@@ -20,5 +20,5 @@ run: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial mon:stdio
 
 debug: all
-	terminator -e "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial mon:stdio -s -S" --new-tab
-	terminator -e "aarch64-linux-gnu-gdb -x debug.txt" --new-tab
+	tilix -a app-new-session -e "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial mon:stdio -s -S" 
+	tilix -a app-new-session -e "./debug.sh"
