@@ -7,18 +7,19 @@ KERNEL = target/aarch64-unknown-none-softfloat/release/osc
 
 all: clean kernel8.img 
        
-kernel8.img: kernel8.elf
-	$(OBJCOPY) -O binary kernel8.elf kernel8.img    
+kernel8.img: $(KERNEL)
+	$(OBJCOPY) -O binary $(KERNEL) kernel8.img    
      
-kernel8.elf: $(LINKER)
-	$(LD) -T $(LINKER) -o kernel8.elf $(KERNEL)
+$(KERNEL): $(LINKER)
+	RUSTFLATS="-C link-arg=$(LINKER) -C target-cpu=cortex-a53 -D warnings" cargo rustc --target=aarch64-unknown-none-softfloat --release
 
 clean:
-	rm -rf kernel8.elf kernel8.img
+	rm -rf kernel8.img
+	cargo clean
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial mon:stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
 
 debug: all
-	tilix -a app-new-session -e "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial mon:stdio -s -S" 
+	tilix -a app-new-session -e "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -s -S" 
 	tilix -a app-new-session -e "./debug.sh"
