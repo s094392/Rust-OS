@@ -5,8 +5,8 @@
 
 mod cpu;
 mod panic_wait;
+mod kernel_init;
 
-#[no_mangle]
 pub unsafe fn main() {
     let mut a = 0;
     loop {

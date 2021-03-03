@@ -2,8 +2,8 @@ SHELL = /bin/sh
 ARM = aarch64-linux-gnu
 LD = $(ARM)-ld
 OBJCOPY = $(ARM)-objcopy
-LINKER = src/link.ld
-KERNEL = target/aarch64-unknown-none-softfloat/release/osc
+LINKER = src/cpu/link.ld
+KERNEL = target/aarch64-unknown-none-softfloat/debug/osc
 
 all: clean kernel8.img 
        
@@ -11,7 +11,7 @@ kernel8.img: $(KERNEL)
 	$(OBJCOPY) -O binary $(KERNEL) kernel8.img    
      
 $(KERNEL): $(LINKER)
-	RUSTFLATS="-C link-arg=$(LINKER) -C target-cpu=cortex-a53 -D warnings" cargo rustc --target=aarch64-unknown-none-softfloat --release
+	RUSTFLAGS="-C link-arg=$(LINKER) -C target-cpu=cortex-a53 -D warnings" cargo rustc --target=aarch64-unknown-none-softfloat 
 
 clean:
 	rm -rf kernel8.img
