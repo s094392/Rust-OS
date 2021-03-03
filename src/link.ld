@@ -9,4 +9,6 @@ SECTIONS
     }
 
     /DISCARD/ : { *(.comment*) }
+
+    _stack_top = .;
 }

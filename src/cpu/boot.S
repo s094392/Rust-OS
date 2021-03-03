@@ -3,5 +3,9 @@
 .global _start
 
 _start:
-1:  wfe         // Wait for event
-    b       1b  // In case an event happened, jump back to 1
+2:
+      ldr x0, = _stack_top
+      mov sp, x0
+      bl main
+1:
+      b 1b
