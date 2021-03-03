@@ -3,9 +3,14 @@
 .global _start
 
 _start:
-2:
-      ldr x0, = _stack_top
-      mov sp, x0
-      bl main
+    mrs     x1, mpidr_el1
+    and     x1, x1, #3
+    cbz     x1, 2f
 1:
-      b 1b
+    wfe
+    b       1b
+2:
+    ldr     x0, = _start
+    mov     sp, x0
+    bl      main
+    b       1b
