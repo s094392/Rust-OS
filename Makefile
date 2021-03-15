@@ -2,7 +2,7 @@ SHELL = /bin/sh
 ARM = aarch64-linux-gnu
 LD = $(ARM)-ld
 OBJCOPY = $(ARM)-objcopy
-LINKER = src/cpu/link.ld
+LINKER = src/boot/link.ld
 KERNEL = target/aarch64-unknown-none-softfloat/debug/osc
 
 all: clean kernel8.img 

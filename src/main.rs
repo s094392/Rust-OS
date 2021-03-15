@@ -4,10 +4,11 @@
 #![no_main]
 #![no_std]
 
-mod cpu;
-mod io;
 mod panic_wait;
 mod kernel_init;
+mod boot;
+mod uart;
+mod mmio;
 
 pub unsafe fn main() {
     let mut a = 0;

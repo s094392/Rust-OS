@@ -1,10 +1,10 @@
-use crate::cpu::clear_bss;
-use crate::io::init;
+use crate::boot::clear_bss;
+use crate::uart::UART;
 use crate::main;
 
 #[no_mangle]
 pub unsafe fn kernel_init() {
     clear_bss();
-    init::uart_init();
+    UART.init();
     main();
 }
