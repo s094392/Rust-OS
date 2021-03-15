@@ -4,18 +4,17 @@
 #![no_main]
 #![no_std]
 
-mod panic_wait;
-mod kernel_init;
 mod boot;
-mod uart;
+mod kernel_init;
 mod mmio;
+mod panic_wait;
+mod uart;
+use crate::uart::put_c;
+use crate::uart::read_c;
 
 pub unsafe fn main() {
-    let mut a = 0;
     loop {
-        a += 1;
-        if a == 10 {
-            break;
-        }
+        let c = read_c();
+        put_c(c);
     }
 }

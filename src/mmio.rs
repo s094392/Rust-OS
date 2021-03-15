@@ -1,4 +1,4 @@
-use core::{ops};
+use core::ops;
 use register::{mmio::*, register_bitfields, register_structs};
 
 pub struct UARTDriver {
@@ -11,8 +11,8 @@ impl UARTDriver {
     }
 
     fn delay(mut cycle: u8) {
-        while cycle>0 {
-            cycle -=1;
+        while cycle > 0 {
+            cycle -= 1;
         }
     }
 
@@ -26,6 +26,7 @@ impl UARTDriver {
         self.AUX_MU_IIR.write(AUX_MU_IIR::FIFO::Disable);
 
         self.GPFSEL1.write(GPFSEL1::FSEL14::ALT5);
+        self.GPFSEL1.write(GPFSEL1::FSEL15::ALT5);
         self.GPPUD.write(GPPUD::PUD::Disable);
 
         UARTDriver::delay(150);
@@ -35,6 +36,29 @@ impl UARTDriver {
 
         self.GPPUDCLK0.set(0);
         self.AUX_MU_CNTL.set(3);
+    }
+
+    pub fn send(&self, c: char) {
+        loop {
+            if self.AUX_MU_LSR.read(AUX_MU_LSR::TRANS_EMPTY) == 1 {
+                break;
+            }
+        }
+        self.AUX_MU_IO.set(c as u32);
+    }
+
+    pub fn read(&self) -> char {
+        loop {
+            if self.AUX_MU_LSR.read(AUX_MU_LSR::DATA_READY) == 1 {
+                break;
+            }
+        }
+        let r = self.AUX_MU_IO.get() as u8;
+        if r as char == '\r' {
+            '\n'
+        } else {
+            r as char
+        }
     }
 }
 
@@ -95,6 +119,17 @@ register_bitfields! {
         FIFO OFFSET(1) NUMBITS(2) [
             Disable = 0b11
         ]
+    ],
+
+    AUX_MU_LSR [
+        TRANS_EMPTY OFFSET(5) NUMBITS(1) [
+            Empty = 0b1,
+            NotEmpty = 0b0
+        ],
+        DATA_READY OFFSET(0) NUMBITS(1) [
+            Ready = 0b1,
+            NotReady = 0b0
+        ]
     ]
 }
 
@@ -103,15 +138,23 @@ register_structs! {
     pub RegisterBlock {
         (0x00 => _reserved1),
         (0x00200004 => GPFSEL1: ReadWrite<u32, GPFSEL1::Register>),
+        (0x00200008 => _reserved2),
+        (0x00200094 => GPPUD: ReadWrite<u32, GPPUD::Register>),
         (0x00200098 => GPPUDCLK0: ReadWrite<u32, GPPUDCLK0::Register>),
-        (0x0020009C => GPPUD: ReadWrite<u32, GPPUD::Register>),
+        (0x0020009C => _reserved3),
         (0x00215004 => AUXENB: ReadWrite<u32, AUXENB::Register>),
+        (0x00215008 => _reserved4),
+        (0x00215040 => AUX_MU_IO: ReadWrite<u32>),
         (0x00215044 => AUX_MU_IER: ReadWrite<u32>),
         (0x00215048 => AUX_MU_IIR: ReadWrite<u32, AUX_MU_IIR::Register>),
         (0x0021504C => AUX_MU_LCR: ReadWrite<u32, AUX_MU_LCR::Register>),
         (0x00215050 => AUX_MU_MCR: ReadWrite<u32>),
+        (0x00215054 => AUX_MU_LSR: ReadWrite<u32, AUX_MU_LSR::Register>),
+        (0x00215058 => _reserved5),
         (0x00215060 => AUX_MU_CNTL: ReadWrite<u32>),
+        (0x00215064 => _reserved6),
         (0x00215068 => AUX_MU_BAUD: ReadWrite<u32>),
+        (0x0021506C => _reserved7),
         (0x01000000 => @END),
     }
 }
