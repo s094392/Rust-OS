@@ -27,21 +27,21 @@ impl MMIODriver {
     }
 
     pub fn uart_init(&self) {
-        self.AUXENB.write(AUXENB::MINIUART::Enable);
+        self.AUXENB.modify(AUXENB::MINIUART::Enable);
         self.AUX_MU_CNTL.set(0);
         self.AUX_MU_IER.set(0);
-        self.AUX_MU_LCR.write(AUX_MU_LCR::DATASIZE::BIT8);
+        self.AUX_MU_LCR.modify(AUX_MU_LCR::DATASIZE::Bit8);
         self.AUX_MU_MCR.set(0);
         self.AUX_MU_BAUD.set(270);
-        self.AUX_MU_IIR.write(AUX_MU_IIR::FIFO::Disable);
+        self.AUX_MU_IIR.modify(AUX_MU_IIR::FIFO::Disable);
 
-        self.GPFSEL1.write(GPFSEL1::FSEL14::ALT5);
-        self.GPFSEL1.write(GPFSEL1::FSEL15::ALT5);
-        self.GPPUD.write(GPPUD::PUD::Disable);
+        self.GPFSEL1.modify(GPFSEL1::FSEL14::Alt5);
+        self.GPFSEL1.modify(GPFSEL1::FSEL15::Alt5);
+        self.GPPUD.modify(GPPUD::PUD::Disable);
 
         MMIODriver::delay(150);
-        self.GPPUDCLK0.write(GPPUDCLK0::PUDCLK14::Enable);
-        self.GPPUDCLK0.write(GPPUDCLK0::PUDCLK15::Enable);
+        self.GPPUDCLK0.modify(GPPUDCLK0::PUDCLK14::Enable);
+        self.GPPUDCLK0.modify(GPPUDCLK0::PUDCLK15::Enable);
         MMIODriver::delay(150);
 
         self.GPPUDCLK0.set(0);
@@ -85,12 +85,12 @@ register_bitfields! {
         FSEL14 OFFSET(12) NUMBITS(3) [
             Input = 0b000,
             Output = 0b001,
-            ALT5 = 0b010
+            Alt5 = 0b010
         ],
         FSEL15 OFFSET(15) NUMBITS(3) [
             Input = 0b000,
             Output = 0b001,
-            ALT5 = 0b010
+            Alt5 = 0b010
         ]
     ],
 
@@ -120,8 +120,8 @@ register_bitfields! {
 
     AUX_MU_LCR [
         DATASIZE OFFSET(0) NUMBITS(2) [
-            BIT7 = 0b00,
-            BIT8 = 0b11
+            Bit7 = 0b00,
+            Bit8 = 0b11
         ]
     ],
 
