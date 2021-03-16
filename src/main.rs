@@ -14,8 +14,23 @@ use crate::sys::reboot;
 use crate::uart::print;
 use crate::uart::read_c;
 
-pub unsafe fn main() {
-    print("Hello world\r\n");
-    let _c = read_c();
-    reboot(2);
+fn shell() {
+    loop {
+        print("$ ");
+        let c = read_c();
+        print("\r\n");
+        if c == 'r' {
+            reboot(3);
+        } else if c == 'p' {
+            print("Hello World\r\n");
+        } else if c == 'h' {
+            print("h: Help\r\n");
+            print("r: Reboot\r\n");
+            print("p: Hello World\r\n");
+        }
+    }
+}
+
+pub fn main() {
+    shell();
 }
