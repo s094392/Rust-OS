@@ -3,10 +3,12 @@ pub static UART: UARTDriver = UARTDriver {
     base_addr: 0x3F000000,
 };
 
-pub fn put_c(c: char) {
-    UART.send(c);
+pub fn print(s: &str) {
+    for c in s.chars() {
+        UART.send(c);
+    }
 }
 
 pub fn read_c() -> char {
-    UART.read()
+    return UART.read();
 }

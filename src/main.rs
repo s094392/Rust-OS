@@ -9,12 +9,10 @@ mod kernel_init;
 mod mmio;
 mod panic_wait;
 mod uart;
-use crate::uart::put_c;
+use crate::uart::print;
 use crate::uart::read_c;
 
 pub unsafe fn main() {
-    loop {
-        let c = read_c();
-        put_c(c);
-    }
+    print("Hello world\r\n");
+    let _c = read_c();
 }
