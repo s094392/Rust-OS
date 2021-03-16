@@ -1,11 +1,16 @@
-use core::ops;
 use register::{mmio::*, register_bitfields, register_structs};
 
-pub struct UARTDriver {
+pub struct MMIODriver {
     pub base_addr: usize,
 }
 
-impl UARTDriver {
+pub static MMIO: MMIODriver = MMIODriver {
+    base_addr: 0x3F000000,
+};
+
+use core::ops;
+
+impl MMIODriver {
     fn ptr(&self) -> *const RegisterBlock {
         self.base_addr as *const _
     }
@@ -16,7 +21,12 @@ impl UARTDriver {
         }
     }
 
-    pub fn init(&self) {
+    pub fn reboot(&self, tick: u32) {
+        self.PM_RSTC.set(0x5a000000 | 0x20);
+        self.PM_WDOG.set(0x5a000000 | tick);
+    }
+
+    pub fn uart_init(&self) {
         self.AUXENB.write(AUXENB::MINIUART::Enable);
         self.AUX_MU_CNTL.set(0);
         self.AUX_MU_IER.set(0);
@@ -29,10 +39,10 @@ impl UARTDriver {
         self.GPFSEL1.write(GPFSEL1::FSEL15::ALT5);
         self.GPPUD.write(GPPUD::PUD::Disable);
 
-        UARTDriver::delay(150);
+        MMIODriver::delay(150);
         self.GPPUDCLK0.write(GPPUDCLK0::PUDCLK14::Enable);
         self.GPPUDCLK0.write(GPPUDCLK0::PUDCLK15::Enable);
-        UARTDriver::delay(150);
+        MMIODriver::delay(150);
 
         self.GPPUDCLK0.set(0);
         self.AUX_MU_CNTL.set(3);
@@ -62,7 +72,7 @@ impl UARTDriver {
     }
 }
 
-impl ops::Deref for UARTDriver {
+impl ops::Deref for MMIODriver {
     type Target = RegisterBlock;
 
     fn deref(&self) -> &Self::Target {
@@ -137,24 +147,28 @@ register_structs! {
     #[allow(non_snake_case)]
     pub RegisterBlock {
         (0x00 => _reserved1),
+        (0x0010001C => PM_RSTC: ReadWrite<u32>),
+        (0x00100020 => _reserved2),
+        (0x00100024 => PM_WDOG: ReadWrite<u32>),
+        (0x00100028 => _reserved3),
         (0x00200004 => GPFSEL1: ReadWrite<u32, GPFSEL1::Register>),
-        (0x00200008 => _reserved2),
+        (0x00200008 => _reserved4),
         (0x00200094 => GPPUD: ReadWrite<u32, GPPUD::Register>),
         (0x00200098 => GPPUDCLK0: ReadWrite<u32, GPPUDCLK0::Register>),
-        (0x0020009C => _reserved3),
+        (0x0020009C => _reserved5),
         (0x00215004 => AUXENB: ReadWrite<u32, AUXENB::Register>),
-        (0x00215008 => _reserved4),
+        (0x00215008 => _reserved6),
         (0x00215040 => AUX_MU_IO: ReadWrite<u32>),
         (0x00215044 => AUX_MU_IER: ReadWrite<u32>),
         (0x00215048 => AUX_MU_IIR: ReadWrite<u32, AUX_MU_IIR::Register>),
         (0x0021504C => AUX_MU_LCR: ReadWrite<u32, AUX_MU_LCR::Register>),
         (0x00215050 => AUX_MU_MCR: ReadWrite<u32>),
         (0x00215054 => AUX_MU_LSR: ReadWrite<u32, AUX_MU_LSR::Register>),
-        (0x00215058 => _reserved5),
+        (0x00215058 => _reserved7),
         (0x00215060 => AUX_MU_CNTL: ReadWrite<u32>),
-        (0x00215064 => _reserved6),
+        (0x00215064 => _reserved8),
         (0x00215068 => AUX_MU_BAUD: ReadWrite<u32>),
-        (0x0021506C => _reserved7),
+        (0x0021506C => _reserved9),
         (0x01000000 => @END),
     }
 }

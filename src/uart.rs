@@ -1,14 +1,15 @@
-use crate::mmio::UARTDriver;
-pub static UART: UARTDriver = UARTDriver {
-    base_addr: 0x3F000000,
-};
+use crate::mmio::MMIO;
+
+pub fn uart_init() {
+    MMIO.uart_init();
+}
 
 pub fn print(s: &str) {
     for c in s.chars() {
-        UART.send(c);
+        MMIO.send(c);
     }
 }
 
 pub fn read_c() -> char {
-    return UART.read();
+    return MMIO.read();
 }
