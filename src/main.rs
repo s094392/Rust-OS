@@ -4,13 +4,13 @@
 #![no_main]
 #![no_std]
 
+#[macro_use]
+mod macros;
 mod boot;
 mod kernel_init;
 mod mmio;
 mod panic_wait;
 mod sys;
-#[macro_use]
-mod macros;
 mod uart;
 use crate::sys::reboot;
 use crate::uart::read_c;
@@ -40,6 +40,10 @@ fn shell() {
                 reboot(3);
             } else {
                 println!("Commnad not found");
+                match s.parse::<u32>() {
+                    Ok(i) => println!("your integer input: {}", i),
+                    Err(..) => println!("this was not an integer: {}", s),
+                };
             }
         }
     }
