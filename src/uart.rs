@@ -4,6 +4,10 @@ pub fn uart_init() {
     MMIO.uart_init();
 }
 
+pub fn print_c(c: char) {
+    MMIO.send(c);
+}
+
 pub fn print(s: &str) {
     for c in s.chars() {
         MMIO.send(c);
