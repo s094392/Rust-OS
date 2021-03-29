@@ -7,6 +7,7 @@
 #[macro_use]
 mod macros;
 mod boot;
+mod frame;
 mod kernel_init;
 mod mmio;
 mod panic_wait;
@@ -22,10 +23,11 @@ fn shell() {
         let mut len = 0;
         loop {
             let c = read_c();
-            print!("{}", c);
             if c == '\n' {
+                println!("");
                 break;
             }
+            print!("{}", c);
             array[len] = c as u8;
             len += 1;
         }
