@@ -13,6 +13,8 @@ mod mmio;
 mod panic_wait;
 mod sys;
 mod uart;
+use crate::frame::page_alloc;
+use crate::frame::BUDDY;
 use crate::sys::reboot;
 use crate::uart::read_c;
 
@@ -40,6 +42,14 @@ fn shell() {
                 println!("hello: Hello World");
             } else if s == "reboot" {
                 reboot(3);
+            } else if s == "frame" {
+                unsafe {
+                    let val = BUDDY.array[0].val;
+                    println!("{}", val);
+                    page_alloc(val - 8);
+                    let val2 = BUDDY.array[0];
+                    println!("{}", val2);
+                }
             } else {
                 println!("Commnad not found");
                 match s.parse::<u32>() {
