@@ -23,3 +23,8 @@ run: all
 debug: all
 	tilix -a app-new-session -e "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -s -S" 
 	tilix -a app-new-session -e "./debug.sh"
+
+debugtmux: all
+	tmux new-window -d "qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -s -S"
+	tmux new-window -d "./debug.sh"
+

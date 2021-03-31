@@ -14,6 +14,7 @@ mod panic_wait;
 mod sys;
 mod uart;
 use crate::frame::page_alloc;
+use crate::frame::page_free;
 use crate::frame::BUDDY;
 use crate::sys::reboot;
 use crate::uart::read_c;
@@ -44,11 +45,10 @@ fn shell() {
                 reboot(3);
             } else if s == "frame" {
                 unsafe {
-                    let val = BUDDY.array[0].val;
+                    let val = BUDDY.array[0].size;
                     println!("{}", val);
-                    page_alloc(val - 8);
-                    let val2 = BUDDY.array[0];
-                    println!("{}", val2);
+                    let mut page = page_alloc(val - 2);
+                    page_free(&mut page);
                 }
             } else {
                 println!("Commnad not found");
