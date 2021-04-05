@@ -1,11 +1,14 @@
 #![feature(asm)]
 #![feature(global_asm)]
 #![feature(const_fn_fn_ptr_basics)]
+#![feature(allocator_api)]
+#![feature(default_alloc_error_handler)]
 #![no_main]
 #![no_std]
 
 #[macro_use]
 mod macros;
+mod allocator;
 mod boot;
 mod frame;
 mod kernel_init;
@@ -13,11 +16,21 @@ mod mmio;
 mod panic_wait;
 mod sys;
 mod uart;
+extern crate alloc;
+use crate::allocator::SlabAllocator;
 use crate::frame::page_alloc;
 use crate::frame::page_free;
-use crate::frame::BUDDY;
 use crate::sys::reboot;
 use crate::uart::read_c;
+use alloc::vec::Vec;
+
+#[global_allocator]
+static GLOBAL: SlabAllocator = SlabAllocator;
+
+struct Tmp {
+    a: u32,
+    b: u32,
+}
 
 fn shell() {
     loop {
@@ -44,12 +57,12 @@ fn shell() {
             } else if s == "reboot" {
                 reboot(3);
             } else if s == "frame" {
-                unsafe {
-                    let val = BUDDY.array[0].size;
-                    println!("{}", val);
-                    let mut page = page_alloc(val - 2);
-                    page_free(&mut page);
-                }
+                println!("{}", 14);
+                let mut page = page_alloc(14);
+                page_free(&mut page);
+            } else if s == "alloc" {
+                let b1 = Vec::<Tmp>::with_capacity(1);
+                println!("{} {}", b1[0].a, b1[0].b);
             } else {
                 println!("Commnad not found");
                 match s.parse::<u32>() {

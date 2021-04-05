@@ -1,14 +1,14 @@
-//#[macro_use]
-//use crate::macros;
 use ::core::ptr;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FrameEntry {
-    pub allocable: bool,
-    pub size: i32,
+    allocable: bool,
+    size: i32,
     next: Option<ptr::NonNull<FrameEntry>>,
     prev: Option<ptr::NonNull<FrameEntry>>,
     id: i32,
+    pub slab_size: i32,
+    pub free_slab: i32,
 }
 
 impl FrameEntry {
@@ -19,6 +19,8 @@ impl FrameEntry {
             next: None,
             prev: None,
             id: 0,
+            slab_size: 0,
+            free_slab: 0,
         }
     }
 }
@@ -93,7 +95,7 @@ fn log2(n: i32) -> i32 {
     targetlevel - 1
 }
 
-pub static mut BUDDY: Buddy = Buddy::new();
+static mut BUDDY: Buddy = Buddy::new();
 
 pub fn buddy_init(start_addr: i32, end_addr: i32) {
     unsafe {
