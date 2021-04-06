@@ -17,7 +17,7 @@ mod panic_wait;
 mod sys;
 mod uart;
 extern crate alloc;
-use crate::allocator::SlabAllocator;
+use crate::allocator::PiAllocator;
 use crate::frame::page_alloc;
 use crate::frame::page_free;
 use crate::sys::reboot;
@@ -25,7 +25,7 @@ use crate::uart::read_c;
 use alloc::vec::Vec;
 
 #[global_allocator]
-static GLOBAL: SlabAllocator = SlabAllocator;
+static GLOBAL: PiAllocator = PiAllocator::new();
 
 struct Tmp {
     a: u32,
@@ -61,8 +61,17 @@ fn shell() {
                 let mut page = page_alloc(14);
                 page_free(&mut page);
             } else if s == "alloc" {
-                let b1 = Vec::<Tmp>::with_capacity(1);
+                let mut b1 = Vec::<Tmp>::new();
+                b1.push(Tmp { a: 1, b: 3 });
+                b1.push(Tmp { a: 1, b: 4 });
+                b1.push(Tmp { a: 1, b: 5 });
+                b1.push(Tmp { a: 1, b: 6 });
+                b1.push(Tmp { a: 1, b: 7 });
                 println!("{} {}", b1[0].a, b1[0].b);
+                println!("{} {}", b1[1].a, b1[1].b);
+                println!("{} {}", b1[2].a, b1[2].b);
+                println!("{} {}", b1[3].a, b1[3].b);
+                println!("{} {}", b1[4].a, b1[4].b);
             } else {
                 println!("Commnad not found");
                 match s.parse::<u32>() {
