@@ -1,4 +1,7 @@
 use ::core::ptr;
+
+const PAGE_SIZE: i32 = 0x1000;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FrameEntry {
@@ -7,6 +10,7 @@ pub struct FrameEntry {
     next: Option<ptr::NonNull<FrameEntry>>,
     prev: Option<ptr::NonNull<FrameEntry>>,
     id: i32,
+    pub addr: i32,
     pub slab_size: i32,
     pub free_slab: i32,
 }
@@ -21,6 +25,7 @@ impl FrameEntry {
             id: 0,
             slab_size: 0,
             free_slab: 0,
+            addr: 0,
         }
     }
 }
@@ -36,7 +41,7 @@ pub struct Buddy {
 }
 
 impl Buddy {
-    const fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             array: [FrameEntry::new(); 0x10000],
             freelists: [None; 20],
@@ -44,6 +49,26 @@ impl Buddy {
             end_addr: 0,
             max_idx: 0,
         }
+    }
+
+    pub fn init(&mut self, start_addr: i32, end_addr: i32) {
+        self.start_addr = start_addr;
+        self.end_addr = end_addr;
+        self.max_idx = (self.end_addr - self.start_addr) / PAGE_SIZE;
+        let total_size_val = log2(self.max_idx);
+        for idx in 0..self.max_idx {
+            self.array[idx as usize].id = idx;
+            self.array[idx as usize].addr = idx * PAGE_SIZE + start_addr;
+        }
+        self.array[0].allocable = true;
+        self.array[0].size = total_size_val;
+        self.freelists[total_size_val as usize] = Some(ptr::NonNull::from(&self.array[0]));
+    }
+
+    pub fn get_page(&self, addr: i32) -> Option<ptr::NonNull<FrameEntry>> {
+        Some(ptr::NonNull::from(
+            &self.array[((addr - self.start_addr) / PAGE_SIZE) as usize],
+        ))
     }
 
     fn push(&mut self, val: i32, frame: &mut Option<ptr::NonNull<FrameEntry>>) {
@@ -80,9 +105,66 @@ impl Buddy {
             }
         }
     }
-}
 
-const PAGE_SIZE: i32 = 0x1000;
+    pub fn page_alloc(&mut self, val: i32) -> Option<ptr::NonNull<FrameEntry>> {
+        println!("alloc {}", val);
+        unsafe {
+            if self.freelists[val as usize] == None {
+                println!("alloc bigger {}", val + 1);
+                let mut big_frame = self.page_alloc(val + 1);
+                match big_frame.as_mut() {
+                    Some(v) => {
+                        let next_frame = v.as_mut().id + 1 << val;
+                        self.array[next_frame as usize].allocable = true;
+                        self.array[next_frame as usize].size = val;
+                        self.push(
+                            val,
+                            &mut Some(ptr::NonNull::from(&self.array[next_frame as usize])),
+                        );
+                        v.as_mut().size = val;
+                    }
+                    None => {}
+                };
+                return big_frame;
+            } else {
+                let mut res = self.freelists[val as usize];
+                match res.as_mut() {
+                    Some(v) => v.as_mut().allocable = false,
+                    None => {}
+                }
+                self.freelists[val as usize] = res;
+                return res;
+            }
+        }
+    }
+
+    pub fn page_free(&mut self, frame: &mut Option<ptr::NonNull<FrameEntry>>) {
+        unsafe {
+            match frame.as_mut() {
+                Some(v) => {
+                    let neighbor_id = v.as_mut().id ^ (1 << v.as_mut().size);
+                    if neighbor_id < self.max_idx && self.array[neighbor_id as usize].allocable {
+                        let head_id = v.as_mut().id & ((1 << v.as_mut().size) - 1);
+                        println!("merge {}, {} -> {}", v.as_mut().id, neighbor_id, head_id);
+                        self.array[head_id as usize].allocable = true;
+                        self.array[head_id as usize].size = v.as_mut().size + 1;
+                        self.remove(&mut Some(ptr::NonNull::from(
+                            &self.array[neighbor_id as usize],
+                        )));
+                        self.page_free(&mut Some(ptr::NonNull::from(
+                            &self.array[head_id as usize],
+                        )));
+                    } else {
+                        println!("push {}", v.as_mut().size);
+                        v.as_mut().allocable = true;
+                        self.push(v.as_mut().size, &mut Some(ptr::NonNull::from(v.as_ref())))
+                    }
+                }
+                None => {}
+            };
+        }
+    }
+}
 
 fn log2(n: i32) -> i32 {
     let mut targetlevel = 0;
@@ -93,80 +175,4 @@ fn log2(n: i32) -> i32 {
         targetlevel += 1;
     }
     targetlevel - 1
-}
-
-static mut BUDDY: Buddy = Buddy::new();
-
-pub fn buddy_init(start_addr: i32, end_addr: i32) {
-    unsafe {
-        BUDDY.start_addr = start_addr;
-        BUDDY.end_addr = end_addr;
-        BUDDY.max_idx = (BUDDY.end_addr - BUDDY.start_addr) / PAGE_SIZE;
-        let total_size_val = log2(BUDDY.max_idx);
-        for idx in 0..BUDDY.max_idx {
-            BUDDY.array[idx as usize].id = idx;
-        }
-        BUDDY.array[0].allocable = true;
-        BUDDY.array[0].size = total_size_val;
-        BUDDY.freelists[total_size_val as usize] = Some(ptr::NonNull::from(&BUDDY.array[0]));
-    }
-}
-
-pub fn page_alloc(val: i32) -> Option<ptr::NonNull<FrameEntry>> {
-    println!("alloc {}", val);
-    unsafe {
-        if BUDDY.freelists[val as usize] == None {
-            println!("alloc bigger {}", val + 1);
-            let mut big_frame = page_alloc(val + 1);
-            match big_frame.as_mut() {
-                Some(v) => {
-                    let next_frame = v.as_mut().id + 1 << val;
-                    BUDDY.array[next_frame as usize].allocable = true;
-                    BUDDY.array[next_frame as usize].size = val;
-                    BUDDY.push(
-                        val,
-                        &mut Some(ptr::NonNull::from(&BUDDY.array[next_frame as usize])),
-                    );
-                    v.as_mut().size = val;
-                }
-                None => {}
-            };
-            return big_frame;
-        } else {
-            let mut res = BUDDY.freelists[val as usize];
-            match res.as_mut() {
-                Some(v) => v.as_mut().allocable = false,
-                None => {}
-            }
-            BUDDY.freelists[val as usize] = res;
-            return res;
-        }
-    }
-}
-
-pub fn page_free(frame: &mut Option<ptr::NonNull<FrameEntry>>) {
-    unsafe {
-        match frame.as_mut() {
-            Some(v) => {
-                let neighbor_id = v.as_mut().id ^ (1 << v.as_mut().size);
-                if neighbor_id < BUDDY.max_idx && BUDDY.array[neighbor_id as usize].allocable {
-                    let head_id = v.as_mut().id & ((1 << v.as_mut().size) - 1);
-                    println!("merge {}, {} -> {}", v.as_mut().id, neighbor_id, head_id);
-                    BUDDY.array[head_id as usize].allocable = true;
-                    BUDDY.array[head_id as usize].size = v.as_mut().size + 1;
-                    BUDDY.remove(&mut Some(ptr::NonNull::from(
-                        &BUDDY.array[neighbor_id as usize],
-                    )));
-                    page_free(&mut Some(ptr::NonNull::from(
-                        &BUDDY.array[head_id as usize],
-                    )));
-                } else {
-                    println!("push {}", v.as_mut().size);
-                    v.as_mut().allocable = true;
-                    BUDDY.push(v.as_mut().size, &mut Some(ptr::NonNull::from(v.as_ref())))
-                }
-            }
-            None => {}
-        };
-    }
 }

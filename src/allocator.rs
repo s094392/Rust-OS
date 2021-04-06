@@ -1,9 +1,9 @@
-//use crate::frame::page_alloc;
-//use crate::frame::page_free;
+use crate::frame::Buddy;
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
 
 struct SlabElement {
+    addr: i32,
     next: Option<NonNull<SlabElement>>,
 }
 
@@ -12,7 +12,7 @@ struct Slab {
 }
 
 impl Slab {
-    pub fn new() -> Slab {
+    pub const fn new() -> Slab {
         Slab { pool: [None; 12] }
     }
 }
@@ -28,34 +28,52 @@ fn log2(n: i32) -> i32 {
     targetlevel - 1
 }
 
-fn kmalloc(size: usize) -> *mut u8 {
-    println!("alloc {:?}", size);
-    let order = log2(size as i32);
-    0 as *mut u8
-}
+static mut SLAB: Slab = Slab::new();
+static mut BUDDY: Buddy = Buddy::new();
 
-fn kfree(ptr: *mut u8, size: usize) {
-    println!("free {:?} {:?}", ptr, size);
-}
-
-pub struct PiAllocator {
-    slab: Slab,
-}
+pub struct PiAllocator {}
 
 impl PiAllocator {
-    pub fn new() -> PiAllocator {
-        PiAllocator { slab: Slab::new() }
+    pub const fn new() -> PiAllocator {
+        PiAllocator {}
+    }
+    //0x1000_0000, 0x2000_0000
+    pub unsafe fn init(&self) {
+        BUDDY.init(0x1000_0000, 0x2000_0000);
     }
 }
 
 unsafe impl GlobalAlloc for PiAllocator {
     #[inline]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        kmalloc(layout.size())
+        let order = log2(layout.size() as i32);
+        if order >= 12 {
+            let page = BUDDY.page_alloc(order);
+            page.unwrap().as_ref().addr as *mut u8
+        } else {
+            match SLAB.pool[order as usize] {
+                Some(v) => {
+                    SLAB.pool[order as usize] = v.as_ref().next;
+                    v.as_ref().addr as *mut u8
+                }
+                None => {
+                    let page = BUDDY.page_alloc(0);
+                    page.unwrap().as_mut().slab_size = 4096 / layout.size() as i32;
+                    page.unwrap().as_mut().free_slab = 4096 / layout.size() as i32;
+                    self.alloc(layout)
+                }
+            }
+        }
     }
 
     #[inline]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        kfree(ptr, layout.size());
+        let order = log2(layout.size() as i32);
+        if order >= 12 {
+            let mut page = BUDDY.get_page(ptr as i32);
+            BUDDY.page_free(&mut page);
+        } else {
+            println!("fo");
+        }
     }
 }
