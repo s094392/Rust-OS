@@ -72,6 +72,7 @@ impl PiAllocator {
                     );
                 }
                 println!("inited");
+                page.unwrap().as_mut().next_slab = SLAB.pool[order as usize];
                 SLAB.pool[order as usize] = page;
                 page.unwrap()
             }

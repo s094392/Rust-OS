@@ -55,7 +55,7 @@ fn shell() {
             } else if s == "reboot" {
                 reboot(3);
             } else if s == "alloc" {
-                for _i in 0..514 {
+                for _i in 0..1 {
                     let mut b1 = Vec::<Tmp>::with_capacity(1);
                     b1.push(Tmp { a: 1, b: 3 });
                     println!("{} {}", b1[0].a, b1[0].b);
