@@ -55,17 +55,11 @@ fn shell() {
             } else if s == "reboot" {
                 reboot(3);
             } else if s == "alloc" {
-                let mut b1 = Vec::<Tmp>::with_capacity(1000);
-                b1.push(Tmp { a: 1, b: 3 });
-                //b1.push(Tmp { a: 1, b: 4 });
-                //b1.push(Tmp { a: 1, b: 5 });
-                //b1.push(Tmp { a: 1, b: 6 });
-                //b1.push(Tmp { a: 1, b: 7 });
-                println!("{} {}", b1[0].a, b1[0].b);
-                //println!("{} {}", b1[1].a, b1[1].b);
-                //println!("{} {}", b1[2].a, b1[2].b);
-                //println!("{} {}", b1[3].a, b1[3].b);
-                //println!("{} {}", b1[4].a, b1[4].b);
+                for _i in 0..514 {
+                    let mut b1 = Vec::<Tmp>::with_capacity(1);
+                    b1.push(Tmp { a: 1, b: 3 });
+                    println!("{} {}", b1[0].a, b1[0].b);
+                }
             } else {
                 println!("Commnad not found");
                 match s.parse::<u32>() {

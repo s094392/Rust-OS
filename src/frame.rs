@@ -13,6 +13,8 @@ pub struct FrameEntry {
     pub addr: i32,
     pub slab_size: i32,
     pub free_slab: i32,
+    pub next_slab: Option<ptr::NonNull<FrameEntry>>,
+    pub free_slot: i32,
 }
 
 impl FrameEntry {
@@ -26,6 +28,8 @@ impl FrameEntry {
             slab_size: 0,
             free_slab: 0,
             addr: 0,
+            next_slab: None,
+            free_slot: 0,
         }
     }
 }
