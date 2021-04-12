@@ -111,10 +111,8 @@ impl Buddy {
     }
 
     pub fn page_alloc(&mut self, val: i32) -> Option<ptr::NonNull<FrameEntry>> {
-        println!("alloc {}", val);
         unsafe {
             if self.freelists[val as usize] == None {
-                println!("alloc bigger {}", val + 1);
                 let mut big_frame = self.page_alloc(val + 1);
                 match big_frame.as_mut() {
                     Some(v) => {
@@ -149,7 +147,6 @@ impl Buddy {
                     let neighbor_id = v.as_mut().id ^ (1 << v.as_mut().size);
                     if neighbor_id < self.max_idx && self.array[neighbor_id as usize].allocable {
                         let head_id = v.as_mut().id & ((1 << v.as_mut().size) - 1);
-                        println!("merge {}, {} -> {}", v.as_mut().id, neighbor_id, head_id);
                         self.array[head_id as usize].allocable = true;
                         self.array[head_id as usize].size = v.as_mut().size + 1;
                         self.remove(&mut Some(ptr::NonNull::from(
@@ -159,7 +156,6 @@ impl Buddy {
                             &self.array[head_id as usize],
                         )));
                     } else {
-                        println!("push {}", v.as_mut().size);
                         v.as_mut().allocable = true;
                         self.push(v.as_mut().size, &mut Some(ptr::NonNull::from(v.as_ref())))
                     }

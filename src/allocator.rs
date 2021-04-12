@@ -55,12 +55,10 @@ impl PiAllocator {
                 if v.as_ref().free_slab > 0 {
                     v
                 } else {
-                    println!("Slab_pool full");
                     PiAllocator::get_free_pool(v.as_ref().next_slab, layout)
                 }
             }
             None => {
-                println!("Slabpool {} is none", order);
                 let page = BUDDY.page_alloc(0);
                 let slab_size = PAGE_SIZE / layout.size() as i32;
                 page.unwrap().as_mut().slab_size = slab_size;
@@ -71,7 +69,6 @@ impl PiAllocator {
                         idx + 1,
                     );
                 }
-                println!("inited");
                 page.unwrap().as_mut().next_slab = SLAB.pool[order as usize];
                 SLAB.pool[order as usize] = page;
                 page.unwrap()
@@ -108,12 +105,10 @@ unsafe impl GlobalAlloc for PiAllocator {
     #[inline]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let order = log2(layout.size() as i32);
-        println!("Alloc: {}", order);
         if order >= 12 {
             let page = BUDDY.page_alloc(order - 12);
             page.unwrap().as_ref().addr as *mut u8
         } else {
-            println!("Alloc from slab");
             let mut slab_pool = PiAllocator::get_free_pool(SLAB.pool[order as usize], layout);
             let res = slab_pool.as_ref().free_slot;
             slab_pool.as_mut().free_slot = PiAllocator::get_value(
@@ -121,11 +116,6 @@ unsafe impl GlobalAlloc for PiAllocator {
             );
             slab_pool.as_mut().free_slab -= 1;
             let addr = (slab_pool.as_ref().addr + res * layout.size() as i32) as *mut u8;
-            println!(
-                "allocated: {:#x}, next: {:#x}",
-                addr as i32,
-                slab_pool.as_mut().free_slot
-            );
             addr
         }
     }
