@@ -8,3 +8,4 @@ Implemented:
 * Uart
 * marco Println! based on Uart
 * Buddy System
+* Dynamic Allocator based on Slab
