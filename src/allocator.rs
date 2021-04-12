@@ -78,6 +78,28 @@ impl PiAllocator {
             }
         }
     }
+
+    unsafe fn free_slab_page(order: i32) {
+        let mut page = SLAB.pool[order as usize];
+        if page.is_some() {
+            if page.unwrap().as_ref().free_slab == page.unwrap().as_ref().slab_size {
+                SLAB.pool[order as usize] = page.unwrap().as_ref().next_slab;
+                BUDDY.page_free(&mut page);
+            } else {
+                while page.unwrap().as_ref().next_slab.is_some() {
+                    if page.unwrap().as_ref().next_slab.unwrap().as_ref().free_slab
+                        == page.unwrap().as_ref().next_slab.unwrap().as_ref().slab_size
+                    {
+                        page.unwrap().as_mut().next_slab =
+                            page.unwrap().as_ref().next_slab.unwrap().as_ref().next_slab;
+                        BUDDY.page_free(&mut page.unwrap().as_mut().next_slab);
+                        return;
+                    }
+                    page = page.unwrap().as_ref().next_slab;
+                }
+            }
+        }
+    }
 }
 
 const PAGE_SIZE: i32 = 0x1000;
@@ -115,7 +137,14 @@ unsafe impl GlobalAlloc for PiAllocator {
             let mut page = BUDDY.get_page(ptr as i32);
             BUDDY.page_free(&mut page);
         } else {
-            println!("fo");
+            let page = BUDDY.get_page(ptr as i32);
+            page.unwrap().as_mut().free_slab += 1;
+            let slot_id = (ptr as i32 - page.unwrap().as_ref().addr) / (1 << order);
+            PiAllocator::set_value(ptr as *mut i32, page.unwrap().as_mut().free_slot);
+            page.unwrap().as_mut().free_slot = slot_id;
+            if page.unwrap().as_ref().slab_size == page.unwrap().as_ref().free_slab {
+                PiAllocator::free_slab_page(order);
+            }
         }
     }
 }

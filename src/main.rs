@@ -57,6 +57,8 @@ fn shell() {
             } else if s == "alloc" {
                 for _i in 0..1 {
                     let mut b1 = Vec::<Tmp>::with_capacity(1);
+                    let _b1 = Vec::<Tmp>::with_capacity(1);
+                    let __b1 = Vec::<Tmp>::with_capacity(1);
                     b1.push(Tmp { a: 1, b: 3 });
                     println!("{} {}", b1[0].a, b1[0].b);
                 }
